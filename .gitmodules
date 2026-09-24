@@ -1,0 +1,3 @@
+[submodule "AvEdan"]
+	path = AvEdan
+	url = git@github.com:edKantor/AvEdan.git
