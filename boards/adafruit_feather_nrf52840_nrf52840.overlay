@@ -1,0 +1,19 @@
+/*
+ * MAX17048 fuel gauge on i2c0. The board's own devicetree already enables
+ * i2c0 with pinctrl (SDA/SCL on the Feather's I2C header pins) -- this just
+ * adds the fuel gauge as a child node at its fixed I2C address.
+ */
+
+/ {
+	aliases {
+		fuel-gauge0 = &max17048;
+	};
+};
+
+&i2c0 {
+	max17048: max17048@36 {
+		compatible = "maxim,max17048";
+		status = "okay";
+		reg = <0x36>;
+	};
+};
