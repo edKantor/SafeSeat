@@ -94,7 +94,10 @@ void BeaconThread(void *, void *, void *)
         if (err) {
             printk("Advertising update failed (err %d)\n", err);
         } else {
-            printk("Beacon updated: battery=%u%% gpio=%d\n", battery_percent, gpio_status);
+            // TODO: remove the repeated address print once it's no longer
+            // needed for bench testing -- it's the same address every cycle.
+            printk("Beacon updated: battery=%u%% gpio=%d addr=%s\n", battery_percent,
+                   gpio_status, bt_addr_le_str(&addr));
             gpio_pin_set_dt(&kLed, 1);
             k_sleep(K_MSEC(100));
             gpio_pin_set_dt(&kLed, 0);
