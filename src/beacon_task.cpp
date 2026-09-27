@@ -72,7 +72,10 @@ void BeaconThread(void *, void *, void *)
         BT_DATA(BT_DATA_MANUFACTURER_DATA, payload, sizeof(payload)),
     };
 
-    err = bt_le_adv_start(BT_LE_ADV_NCONN, ad, ARRAY_SIZE(ad), NULL, 0);
+    // _IDENTITY forces advertising to use the identity address bt_id_get()
+    // reports below -- plain BT_LE_ADV_NCONN doesn't guarantee that, so the
+    // printed address could otherwise not match what's actually broadcast.
+    err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad), NULL, 0);
     if (err) {
         printk("Advertising failed to start (err %d)\n", err);
         return;
@@ -98,7 +101,7 @@ void BeaconThread(void *, void *, void *)
             // something this code did) -- update_data() only refreshes an
             // already-running advertiser, so restart it from scratch.
             printk("Advertising was stopped, restarting\n");
-            err = bt_le_adv_start(BT_LE_ADV_NCONN, ad, ARRAY_SIZE(ad), NULL, 0);
+            err = bt_le_adv_start(BT_LE_ADV_NCONN_IDENTITY, ad, ARRAY_SIZE(ad), NULL, 0);
         }
         if (err) {
             printk("Advertising update failed (err %d)\n", err);
