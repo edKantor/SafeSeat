@@ -103,4 +103,6 @@ void BeaconThread(void *, void *, void *)
 
 } // namespace
 
-K_THREAD_DEFINE(beacon_tid, 1024, BeaconThread, NULL, NULL, NULL, 7, 0, 0);
+// 1024 was too thin once Bluetooth host calls combined with
+// CONFIG_LOG_MODE_IMMEDIATE's synchronous log formatting on this same stack.
+K_THREAD_DEFINE(beacon_tid, 4096, BeaconThread, NULL, NULL, NULL, 7, 0, 0);
