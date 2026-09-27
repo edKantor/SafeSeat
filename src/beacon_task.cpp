@@ -1,12 +1,10 @@
 #include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/fuel_gauge.h>
 #include <zephyr/bluetooth/bluetooth.h>
-
-#include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(beacon, LOG_LEVEL_DBG);
 
 namespace {
 
@@ -28,39 +26,33 @@ constexpr uint8_t kTestCompanyId[2] = {0xFF, 0xFF};
 uint8_t ReadBatteryPercent()
 {
     if (!device_is_ready(kFuelGauge)) {
-        LOG_ERR("Fuel gauge not ready");
+        printk("Fuel gauge not ready\n");
         return 0;
     }
 
     union fuel_gauge_prop_val val;
     int err = fuel_gauge_get_prop(kFuelGauge, FUEL_GAUGE_RELATIVE_STATE_OF_CHARGE, &val);
     if (err) {
-        LOG_ERR("Fuel gauge read failed (err %d)", err);
+        printk("Fuel gauge read failed (err %d)\n", err);
         return 0;
     }
 
-    LOG_DBG("Fuel gauge raw state of charge: %u%%", val.relative_state_of_charge);
     return val.relative_state_of_charge;
 }
 
 void BeaconThread(void *, void *, void *)
 {
-    LOG_INF("Beacon thread starting");
-
     int err = bt_enable(NULL);
     if (err) {
-        LOG_ERR("Bluetooth init failed (err %d)", err);
+        printk("Bluetooth init failed (err %d)\n", err);
         return;
     }
-    LOG_DBG("Bluetooth enabled");
 
     if (!gpio_is_ready_dt(&kStatusGpio)) {
-        LOG_ERR("Status GPIO not ready");
+        printk("Status GPIO not ready\n");
         return;
     }
     gpio_pin_configure_dt(&kStatusGpio, GPIO_INPUT);
-    LOG_DBG("Status GPIO configured as input (port %s, pin %d)", kStatusGpio.port->name,
-            kStatusGpio.pin);
 
     // [company_id_lo, company_id_hi, battery_percent, gpio_status]
     static uint8_t payload[4] = {kTestCompanyId[0], kTestCompanyId[1], 0, 0};
@@ -71,7 +63,7 @@ void BeaconThread(void *, void *, void *)
 
     err = bt_le_adv_start(BT_LE_ADV_NCONN, ad, ARRAY_SIZE(ad), NULL, 0);
     if (err) {
-        LOG_ERR("Advertising failed to start (err %d)", err);
+        printk("Advertising failed to start (err %d)\n", err);
         return;
     }
 
@@ -80,21 +72,20 @@ void BeaconThread(void *, void *, void *)
     bt_addr_le_t addr = {0};
     size_t count = 1;
     bt_id_get(&addr, &count);
-    LOG_INF("Beacon started, advertising as %s", bt_addr_le_str(&addr));
+    printk("Beacon started, advertising as %s\n", bt_addr_le_str(&addr));
 
     while (true) {
         int gpio_status = gpio_pin_get_dt(&kStatusGpio);
         uint8_t battery_percent = ReadBatteryPercent();
-        LOG_DBG("Raw reads: gpio_status=%d battery_percent=%u", gpio_status, battery_percent);
 
         payload[2] = battery_percent;
         payload[3] = static_cast<uint8_t>(gpio_status > 0);
 
         err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
         if (err) {
-            LOG_ERR("Advertising update failed (err %d)", err);
+            printk("Advertising update failed (err %d)\n", err);
         } else {
-            LOG_INF("Beacon updated: battery=%u%% gpio=%d", battery_percent, gpio_status);
+            printk("Beacon updated: battery=%u%% gpio=%d\n", battery_percent, gpio_status);
         }
 
         k_sleep(kReadInterval);
@@ -103,6 +94,4 @@ void BeaconThread(void *, void *, void *)
 
 } // namespace
 
-// 1024 was too thin once Bluetooth host calls combined with
-// CONFIG_LOG_MODE_IMMEDIATE's synchronous log formatting on this same stack.
 K_THREAD_DEFINE(beacon_tid, 4096, BeaconThread, NULL, NULL, NULL, 7, 0, 0);

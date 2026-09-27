@@ -1,10 +1,8 @@
 #include <zephyr/kernel.h>
-
-#include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(main, LOG_LEVEL_DBG);
+#include <zephyr/sys/printk.h>
 
 extern "C" int main(void)
 {
-	LOG_INF("SafeSeat starting");
+	printk("SafeSeat starting\n");
 	return 0;
 }
