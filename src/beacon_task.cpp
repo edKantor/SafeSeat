@@ -19,6 +19,9 @@ const struct gpio_dt_spec kStatusGpio = GPIO_DT_SPEC_GET(DT_ALIAS(status_gpio0),
 // boards/xiao_ble_nrf52840_sense.overlay.
 const struct device *const kFuelGauge = DEVICE_DT_GET(DT_ALIAS(fuel_gauge0));
 
+// This board's red LED -- flashed briefly each time the beacon is sent.
+const struct gpio_dt_spec kLed = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+
 // 0xFFFF is reserved by the Bluetooth SIG for internal/test use only --
 // replace with a real assigned Company Identifier before shipping.
 constexpr uint8_t kTestCompanyId[2] = {0xFF, 0xFF};
@@ -54,6 +57,12 @@ void BeaconThread(void *, void *, void *)
     }
     gpio_pin_configure_dt(&kStatusGpio, GPIO_INPUT);
 
+    if (gpio_is_ready_dt(&kLed)) {
+        gpio_pin_configure_dt(&kLed, GPIO_OUTPUT_INACTIVE);
+    } else {
+        printk("LED not ready\n");
+    }
+
     // [company_id_lo, company_id_hi, battery_percent, gpio_status]
     static uint8_t payload[4] = {kTestCompanyId[0], kTestCompanyId[1], 0, 0};
     const struct bt_data ad[] = {
@@ -86,6 +95,9 @@ void BeaconThread(void *, void *, void *)
             printk("Advertising update failed (err %d)\n", err);
         } else {
             printk("Beacon updated: battery=%u%% gpio=%d\n", battery_percent, gpio_status);
+            gpio_pin_set_dt(&kLed, 1);
+            k_sleep(K_MSEC(100));
+            gpio_pin_set_dt(&kLed, 0);
         }
 
         k_sleep(kReadInterval);
