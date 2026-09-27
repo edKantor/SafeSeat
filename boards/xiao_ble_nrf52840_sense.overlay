@@ -1,0 +1,32 @@
+/*
+ * MAX17048 fuel gauge on i2c1 -- the general-purpose I2C bus exposed on the
+ * XIAO header pins (D4/D5). i2c0 is already dedicated to the onboard IMU on
+ * this board, so the fuel gauge must go on i2c1 instead.
+ *
+ * status_gpio0 is a placeholder external input on D0 (P0.02) -- swap the pin
+ * here once the real signal to monitor is known.
+ */
+
+/ {
+	status_gpios {
+		compatible = "gpio-keys";
+
+		status_gpio0: status_gpio0 {
+			gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+			label = "Status input";
+		};
+	};
+
+	aliases {
+		fuel-gauge0 = &max17048;
+		status-gpio0 = &status_gpio0;
+	};
+};
+
+&i2c1 {
+	max17048: max17048@36 {
+		compatible = "maxim,max17048";
+		status = "okay";
+		reg = <0x36>;
+	};
+};

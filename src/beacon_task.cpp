@@ -10,12 +10,13 @@ namespace {
 
 constexpr k_timeout_t kReadInterval = K_SECONDS(5);
 
-// "sw0" is this board's separate user button (P1.02), not the physical reset
-// button. Swap the alias/pin here once the real signal to monitor is known.
-const struct gpio_dt_spec kStatusGpio = GPIO_DT_SPEC_GET(DT_ALIAS(sw0), gpios);
+// This board (XIAO BLE Sense) has no onboard user button, so "status-gpio0"
+// is a placeholder pointing at header pin D0 -- swap the pin in the board
+// overlay once the real signal to monitor is known.
+const struct gpio_dt_spec kStatusGpio = GPIO_DT_SPEC_GET(DT_ALIAS(status_gpio0), gpios);
 
 // Requires a MAX17048 node aliased to "fuel-gauge0" in a board overlay — see
-// boards/adafruit_feather_nrf52840_nrf52840.overlay.
+// boards/xiao_ble_nrf52840_sense.overlay.
 const struct device *const kFuelGauge = DEVICE_DT_GET(DT_ALIAS(fuel_gauge0));
 
 // 0xFFFF is reserved by the Bluetooth SIG for internal/test use only --
