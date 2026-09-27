@@ -1,3 +1,5 @@
+#include <errno.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/device.h>
@@ -91,6 +93,13 @@ void BeaconThread(void *, void *, void *)
         payload[3] = static_cast<uint8_t>(gpio_status > 0);
 
         err = bt_le_adv_update_data(ad, ARRAY_SIZE(ad), NULL, 0);
+        if (err == -EAGAIN) {
+            // Advertising got disabled from under us (controller-side, not
+            // something this code did) -- update_data() only refreshes an
+            // already-running advertiser, so restart it from scratch.
+            printk("Advertising was stopped, restarting\n");
+            err = bt_le_adv_start(BT_LE_ADV_NCONN, ad, ARRAY_SIZE(ad), NULL, 0);
+        }
         if (err) {
             printk("Advertising update failed (err %d)\n", err);
         } else {
